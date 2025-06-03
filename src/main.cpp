@@ -23,6 +23,7 @@ const char* serverURL = "http://192.168.4.1/uid";
 #define CARD1 "108e821" // Carte Corentin
 #define CARD2 "73f4f16" // Carte Vierge
 #define CARD3 "70f8fa21" // Carte Matteo
+#define BUZZER_PIN 19
 
 MFRC522 mfrc522(SS_PIN, RST_PIN); // Create instance
 int state_scan = 0;
@@ -46,6 +47,26 @@ void check_scanned_card(String uid)
     state_scan = 0;
 }
 
+void NeutralBip() {
+    tone(BUZZER_PIN, 2000, 100);
+    delay(120);
+    noTone(BUZZER_PIN);
+}
+
+void OpenBip() {
+    tone(BUZZER_PIN, 1500, 80);
+    delay(100);
+    tone(BUZZER_PIN, 2000, 80);
+    delay(100);
+    tone(BUZZER_PIN, 2500, 80);
+    delay(100);
+    tone(BUZZER_PIN, 3000, 80);
+    delay(100);
+    tone(BUZZER_PIN, 3500, 300);
+    delay(320);
+    noTone(BUZZER_PIN);
+}
+
 void setup() {
     Serial.begin(115200);
     #ifdef DEBUG // Wait for serial to connect
@@ -61,6 +82,7 @@ void setup() {
     }
     Serial.println("\nConnected to AP");
     Serial.println("Finished loading");
+    pinMode(BUZZER_PIN, OUTPUT);
 }
 
 void loop() {
@@ -74,6 +96,8 @@ void loop() {
       uid += String(mfrc522.uid.uidByte[i], HEX);
     }
 
+    NeutralBip();
+
     if (WiFi.status() == WL_CONNECTED) {
         HTTPClient http;
         http.begin(serverURL);
@@ -81,6 +105,7 @@ void loop() {
         Serial.println(uid);
         check_scanned_card(uid);
         if (state_scan == 3) {
+            OpenBip();
             int code = http.POST("true");
             Serial.print("POST response code: ");
             Serial.println(code);
